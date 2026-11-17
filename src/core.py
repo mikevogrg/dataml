@@ -164,8 +164,11 @@ def stuck_flags(vals,ch,min_run=C.STUCK_MIN_RUN):
         start=end
     return out
 
-def _iforest_flags(features, contamination=C.IFOREST_CONTAMINATION, trees=C.IFOREST_TREES, seed=C.RANDOM_STATE):
+def _iforest_flags(features, contamination=None, trees=None, seed=None):
     """Pure-Python Isolation Forest using the standard 256-row subsample."""
+    contamination = C.IFOREST_CONTAMINATION if contamination is None else contamination
+    trees = C.IFOREST_TREES if trees is None else trees
+    seed = C.RANDOM_STATE if seed is None else seed
     n=len(features)
     if n<8: return [False]*n
     rng=random.Random(seed); dim=len(features[0]); sample_size=min(256,n)
