@@ -113,7 +113,7 @@ def run():
         "## 2. Detection method comparison (mean ± standard deviation across seeds)",
         "",
         "| Method | Precision | Recall | F1 | Raw RMSE | Cleaned RMSE | RMSE improvement | Missing imputation RMSE |",
-        "|---|---:|---:|---:|---:|---:|---:|",
+        "|---|---:|---:|---:|---:|---:|---:|---:|",
     ]
     all_results = {"seeds": list(SEEDS), "evaluation_motes": EVAL_MOTES, "evaluation_days": EVAL_DAYS, "evaluation_iforest_trees": EVAL_TREES, "application_default_iforest_trees": 200, "method_comparison": {}, "ablation": {}, "fault_recall": {}, "online_vs_batch": {}}
     for name, methods in METHODS.items():
@@ -129,7 +129,7 @@ def run():
         report.append("| " + name + " | " + " | ".join(cells) + " |")
     report += ["", "## 3. Per-channel performance (hybrid, seed 11)", "",
                "| Channel | Precision | Recall | F1 | Raw RMSE | Cleaned RMSE | RMSE improvement | Missing imputation RMSE |",
-               "|---|---:|---:|---:|---:|---:|---:|"]
+               "|---|---:|---:|---:|---:|---:|---:|---:|"]
     rows = generate(n_motes=EVAL_MOTES, days=EVAL_DAYS, seed=11)
     rr, cc, ff, _ = CleaningPipeline().run(rows)
     base = score_one(rr, cc, ff)
