@@ -1,0 +1,10 @@
+flowchart LR
+  S["IoT motes<br/>temp, humidity, light, voltage"] --> G["Gateway ingest<br/>CSV / stream"]
+  G --> V["Validate schema<br/>sort, dedupe, regular grid"]
+  V --> ON["ONLINE cleaner<br/>range, Hampel, stuck, spatial<br/>(causal, per tick)"]
+  V --> OFF["OFFLINE cleaner<br/>+ Isolation Forest<br/>(batch, periodic)"]
+  ON --> R["Repair<br/>linear / neighbour model"]
+  OFF --> R
+  R --> DB[("SQLite audit store<br/>raw + cleaned + reasons")]
+  DB --> RP["Reports, plots,<br/>explain a value"]
+  DB --> AN["Downstream analytics"]

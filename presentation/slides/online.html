@@ -1,0 +1,13 @@
+<section id="online" class="light">
+<p class="eyebrow">LIVE USE · CAUSAL ONLINE CLEANER</p>
+<h2>Running live costs accuracy</h2>
+<table style="width:1200px">
+<tr><th style="width:40%">Channel</th><th>Online F1</th><th>Offline F1</th></tr>
+<tr><td>Temperature</td><td>0.85</td><td>0.95</td></tr>
+<tr><td>Humidity</td><td>0.70</td><td>0.91</td></tr>
+<tr><td>Light</td><td>0.87</td><td>0.91</td></tr>
+<tr><td>Voltage</td><td>0.91</td><td>0.95</td></tr>
+</table>
+<p class="muted">The online version sees only the past, so slow faults are confirmed late. A test proves that changing future data never changes past output.</p>
+<aside>11:00–11:30. The online cleaner works one time tick at a time like an edge gateway, with no look-ahead and no Isolation Forest. It scores lower, especially on humidity. This is the price of live operation. Next step is a short look-ahead delay.</aside>
+</section>

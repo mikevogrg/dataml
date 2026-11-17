@@ -1,0 +1,13 @@
+<section id="approach" class="light">
+<p class="eyebrow">OUR APPROACH</p>
+<h2>Five detectors, each catching what the others miss</h2>
+<div class="row">
+<div class="card"><h3>Range rules</h3><p>Impossible values</p></div>
+<div class="card"><h3>Hampel filter</h3><p>Isolated spikes</p></div>
+<div class="card"><h3>Stuck rule</h3><p>Frozen sensors</p></div>
+<div class="card"><h3>Spatial check</h3><p>Bias and drift</p></div>
+<div class="card"><h3>Isolation Forest</h3><p>Unknown fault types</p></div>
+</div>
+<p class="muted" style="font-size:36px">Then repair: linear for short gaps, neighbour model for long gaps. Everything goes to an audit database with its reason.</p>
+<aside>2:00–3:30. Cheap and explainable first, machine learning last. Range, Hampel and stuck are simple rules with no false alarms in our tests. Spatial is the key idea on the next slide. Isolation Forest is unsupervised, so it needs no labelled faults. Then an online cleaner for live use and an offline one with look-ahead, both feeding a SQLite audit store.</aside>
+</section>

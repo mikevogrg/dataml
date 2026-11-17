@@ -1,0 +1,40 @@
+body { font-family: 'Inter', Arial, sans-serif; }
+section { padding: 128px 128px 160px; display: flex; flex-direction: column; gap: 36px; }
+section.light { background: #F4F1EA; color: #1B2A3F; }
+section.dark { background: #0F1B2D; color: #F4F1EA; }
+section.accent { background: #1F9E8F; color: #0B1A22; }
+h1, h2, h3 { font-family: 'Space Grotesk', Arial, sans-serif; }
+h1 { font-size: 120px; line-height: 1.05; font-weight: 600; }
+h2 { font-size: 72px; line-height: 1.1; font-weight: 600; }
+h3 { font-size: 44px; line-height: 1.15; font-weight: 600; }
+p { font-size: 36px; line-height: 1.35; }
+.eyebrow { font-size: 28px; letter-spacing: 4px; font-weight: 600; }
+.light .eyebrow { color: #0F7A6E; }
+.dark .eyebrow { color: #3FC4B3; }
+.accent .eyebrow { color: #0B1A22; }
+.muted { font-size: 32px; }
+.light .muted { color: #4A5568; }
+.dark .muted { color: #A9B8CC; }
+.row { display: flex; gap: 32px; }
+.col { display: flex; flex-direction: column; gap: 20px; flex: 1; }
+.card { flex: 1; padding: 36px; display: flex; flex-direction: column; gap: 16px; }
+.light .card { background: #FFFFFF; border: 2px solid #D9D3C5; }
+.dark .card { background: #172A45; border: 2px solid #2A4468; }
+.card p { font-size: 30px; }
+.card h3 { font-size: 40px; }
+.tag { font-size: 28px; font-weight: 600; }
+.light .tag { color: #0F7A6E; }
+.dark .tag { color: #E0A030; }
+.big { font-family: 'Space Grotesk', Arial, sans-serif; font-size: 190px; line-height: 1; font-weight: 600; }
+.light .big { color: #0F7A6E; }
+.dark .big { color: #3FC4B3; }
+.amber { color: #E0A030; }
+.mono { font-family: 'Courier New', monospace; font-size: 34px; line-height: 1.5; }
+.code { background: #0B1424; color: #D6E4F5; padding: 36px 44px; display: flex; flex-direction: column; gap: 8px; }
+.bars { display: flex; flex-direction: column; gap: 22px; }
+.bar { display: flex; align-items: center; gap: 28px; }
+.bar .lbl { width: 520px; font-size: 32px; }
+.bar .val { font-size: 32px; font-weight: 600; width: 120px; }
+.bar .fill { height: 44px; background: #1F9E8F; }
+.bar .fill.hot { background: #E0A030; }
+.light table, .dark table { font-size: 34px; }

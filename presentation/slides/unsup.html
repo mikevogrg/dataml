@@ -1,0 +1,9 @@
+<section id="unsup" class="dark">
+<p class="eyebrow">TWO HONEST FINDINGS ABOUT THE ML</p>
+<h2>No labels needed, and insurance for new faults</h2>
+<div class="row">
+<div class="card"><h3>Unsupervised matches supervised</h3><p>A Random Forest trained on labelled faults: F1 0.942</p><p>Our hybrid, no labels: F1 0.942</p><p class="tag">Real deployments rarely have labelled faults.</p></div>
+<div class="card"><h3>Isolation Forest is insurance</h3><p>Known faults only: F1 0.958 without it, 0.943 with it</p><p>With a new noise-burst fault: recall 0.61 without it, 0.71 with it</p><p class="tag">It earns its place on faults nobody wrote a rule for.</p></div>
+</div>
+<aside>10:00–11:00. Left: a supervised Random Forest trained on three labelled simulated networks ties our unsupervised system, so labels are not needed. Right: we invented a fault with no rule, a sudden eight-fold rise in noise. The Isolation Forest raised recall on it from 0.61 to 0.71 and overall F1 from 0.872 to 0.899, at a small precision cost on known faults.</aside>
+</section>

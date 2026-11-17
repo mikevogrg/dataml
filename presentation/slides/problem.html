@@ -1,0 +1,15 @@
+<section id="problem" class="light">
+<p class="eyebrow">THE PROBLEM</p>
+<h2>Bad sensor data leads to bad decisions</h2>
+<div class="row">
+<div class="card"><h3>Spike</h3><p>One reading jumps far from its neighbours in time</p></div>
+<div class="card"><h3>Stuck</h3><p>A sensor freezes on one value that still looks plausible</p></div>
+<div class="card"><h3>Bias</h3><p>Readings sit a fixed amount too high or too low</p></div>
+</div>
+<div class="row">
+<div class="card"><h3>Drift</h3><p>Error grows slowly, so each reading looks almost normal</p></div>
+<div class="card"><h3>Impossible</h3><p>Values like 122 °C in an office, a real Intel Lab reading</p></div>
+<div class="card"><h3>Missing</h3><p>Dropped packets leave holes in the stream</p></div>
+</div>
+<aside>0:30–1:30. Walk through the six fault types we model, following the standard taxonomy from de Bruijn et al. (2016). Make the point that a spike filter cannot see drift, and a range check cannot see a frozen sensor, so no single technique is enough. The 122 °C reading is real: it appears in the Intel Berkeley Lab dataset.</aside>
+</section>

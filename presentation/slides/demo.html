@@ -1,0 +1,12 @@
+<section id="demo" class="accent">
+<p class="eyebrow">LIVE DEMO · ABOUT 4 MINUTES</p>
+<h2>Watch it clean a faulty sensor network</h2>
+<div class="code">
+<p class="mono">python main.py simulate --out data/demo.csv</p>
+<p class="mono">python main.py clean --input data/demo.csv --mode batch</p>
+<p class="mono">python main.py explain --mote 3 --channel humidity</p>
+<p class="mono">python demo.py --stream</p>
+</div>
+<p style="font-size:34px">Then open results/before_after_humidity.png</p>
+<aside>4:30–8:30. Run the four commands in order. 1) simulate makes a labelled network. 2) clean runs the offline pipeline and prints how many readings were flagged per channel. 3) explain shows, for one sensor, which readings were changed and the reason (range, hampel, stuck, spatial, iforest). 4) the stream replay prints faults and repairs one by one next to the true value. Finish by opening the before/after picture. Backup plan: if anything fails, show results/before_after_humidity.png and results/report.md, which are already generated. Rehearse once beforehand.</aside>
+</section>

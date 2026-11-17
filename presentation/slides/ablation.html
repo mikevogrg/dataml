@@ -1,0 +1,14 @@
+<section id="ablation" class="light">
+<p class="eyebrow">ABLATION · F1 WHEN ONE LAYER IS REMOVED</p>
+<h2>The spatial check matters most</h2>
+<div class="bars">
+<div class="bar"><p class="lbl">Without Isolation Forest</p><div class="fill" style="width:861px"></div><p class="val">0.957</p></div>
+<div class="bar"><p class="lbl">Without range rules</p><div class="fill" style="width:851px"></div><p class="val">0.945</p></div>
+<div class="bar"><p class="lbl">Without Hampel</p><div class="fill" style="width:849px"></div><p class="val">0.943</p></div>
+<div class="bar"><p class="lbl"><b>Full hybrid</b></p><div class="fill" style="width:848px"></div><p class="val">0.942</p></div>
+<div class="bar"><p class="lbl">Without stuck rule</p><div class="fill" style="width:800px"></div><p class="val">0.889</p></div>
+<div class="bar"><p class="lbl"><b>Without spatial check</b></p><div class="fill hot" style="width:554px"></div><p class="val">0.616</p></div>
+</div>
+<p class="muted">Mean over 5 seeds. Spatial alone reaches 0.90; the Isolation Forest alone only 0.39.</p>
+<aside>9:00–10:00. Remove one layer at a time. Dropping the spatial check collapses F1 from 0.94 to 0.62, so it is the most valuable layer. Dropping the stuck rule costs 0.05. Be honest about the surprise: removing the Isolation Forest slightly RAISES F1 to 0.957 on these known faults. The next slide explains why we keep it anyway.</aside>
+</section>

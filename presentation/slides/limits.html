@@ -1,0 +1,25 @@
+<section id="limits" class="light">
+<p class="eyebrow">LIMITS AND NEXT STEPS</p>
+<h2>What we have not proved yet</h2>
+<div class="row" style="gap:64px">
+<div class="col">
+<h3>Limits</h3>
+<ul style="font-size:32px;line-height:1.5">
+<li>All scores come from a simulator, which flatters the method</li>
+<li>The real Intel Lab data is not yet scored: it has no fault labels</li>
+<li>With 2 or 3 sensors the spatial check weakens (F1 0.72 at 2)</li>
+<li>The online cleaner is clearly less accurate</li>
+</ul>
+</div>
+<div class="col">
+<h3>Next</h3>
+<ol style="font-size:32px;line-height:1.5">
+<li>Run on the real Intel Lab data and inspect flags</li>
+<li>Add labelled benchmark data (de Bruijn 2016)</li>
+<li>Close the online gap with a short look-ahead</li>
+<li>Test Kalman and autoencoder baselines</li>
+</ol>
+</div>
+</div>
+<aside>12:30–13:30. Say plainly that goal 4, a real-data demonstration with scoring, is only partly met. The code already loads the real Intel Lab format and is tested on it, but the dataset could not be downloaded in the build environment. Next steps in priority order.</aside>
+</section>
