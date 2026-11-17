@@ -14,7 +14,7 @@ from pathlib import Path
 
 from src import config as C
 from src.core import CleaningPipeline, generate, stream_clean
-from src.evaluate import detection_scores, recall_by_fault, value_rmse
+from src.evaluate import detection_scores, recall_by_fault
 
 SEEDS = (11, 12, 13)
 EVAL_MOTES = 4
@@ -45,9 +45,39 @@ def avg(xs):
 def sd(xs):
     return statistics.stdev(xs) if len(xs) > 1 else 0.0
 
+def repair_scores(rows, cleaned):
+    """Compare raw and repaired RMSE on identical observed timestamps.
+
+    Imputation error for missing values is measured separately because no raw
+    reading exists from which to calculate a raw RMSE.
+    """
+    out = []
+    for ch in C.CHANNELS:
+        raw_sq, clean_sq, missing_sq = [], [], []
+        for i, row in enumerate(rows):
+            truth = row.get("true_" + ch)
+            value = row.get(ch)
+            repaired = cleaned[i].get(ch)
+            if truth is None or repaired is None:
+                continue
+            if value is None:
+                missing_sq.append((repaired - truth) ** 2)
+            else:
+                raw_sq.append((value - truth) ** 2)
+                clean_sq.append((repaired - truth) ** 2)
+        raw_rmse = math.sqrt(avg(raw_sq)) if raw_sq else 0.0
+        clean_rmse = math.sqrt(avg(clean_sq)) if clean_sq else 0.0
+        missing_rmse = math.sqrt(avg(missing_sq)) if missing_sq else 0.0
+        improvement = 100 * (1 - clean_rmse / raw_rmse) if raw_rmse else 0.0
+        out.append({"channel": ch, "raw_rmse": raw_rmse,
+                    "cleaned_rmse": clean_rmse, "improvement_%": improvement,
+                    "missing_imputation_rmse": missing_rmse,
+                    "observed_count": len(raw_sq), "missing_count": len(missing_sq)})
+    return out
+
 def score_one(rows, cleaned, flags):
     det = detection_scores(rows, flags)
-    rms = value_rmse(rows, cleaned)
+    rms = repair_scores(rows, cleaned)
     return {
         "precision": avg([x["precision"] for x in det]),
         "recall": avg([x["recall"] for x in det]),
@@ -55,6 +85,7 @@ def score_one(rows, cleaned, flags):
         "raw_rmse": avg([x["raw_rmse"] for x in rms]),
         "cleaned_rmse": avg([x["cleaned_rmse"] for x in rms]),
         "rmse_improvement_pct": avg([x["improvement_%"] for x in rms]),
+        "missing_imputation_rmse": avg([x["missing_imputation_rmse"] for x in rms]),
         "per_channel": det,
         "per_channel_rmse": rms,
     }
@@ -76,12 +107,12 @@ def run():
         "- Default injected fault rate: 8% per channel, with spike, stuck, bias, drift, sentinel and missing faults.",
         "- Isolation Forest evaluation profile: 50 trees; contamination 0.03. The application default remains 200 trees. Seeds are deterministic by global seed, mote and channel.",
         "- Detection metrics: precision, recall and F1 against non-missing fault labels.",
-        "- Repair metric: RMSE before and after cleaning against the simulator's hidden clean signal.",
+        "- Repair metrics: raw and cleaned RMSE on the same observed timestamps; missing-value imputation RMSE is reported separately against the hidden clean signal.",
         "- All values below are recalculated by the current implementation when this script is run.",
         "",
         "## 2. Detection method comparison (mean ± standard deviation across seeds)",
         "",
-        "| Method | Precision | Recall | F1 | Raw RMSE | Cleaned RMSE | RMSE improvement |",
+        "| Method | Precision | Recall | F1 | Raw RMSE | Cleaned RMSE | RMSE improvement | Missing imputation RMSE |",
         "|---|---:|---:|---:|---:|---:|---:|",
     ]
     all_results = {"seeds": list(SEEDS), "evaluation_motes": EVAL_MOTES, "evaluation_days": EVAL_DAYS, "evaluation_iforest_trees": EVAL_TREES, "application_default_iforest_trees": 200, "method_comparison": {}, "ablation": {}, "fault_recall": {}, "online_vs_batch": {}}
@@ -91,13 +122,13 @@ def run():
             rows = generate(n_motes=EVAL_MOTES, days=EVAL_DAYS, seed=seed)
             cleaned_rows, cleaned, flags, _ = CleaningPipeline(methods).run(rows)
             per_seed.append(score_one(cleaned_rows, cleaned, flags))
-        keys = ("precision", "recall", "f1", "raw_rmse", "cleaned_rmse", "rmse_improvement_pct")
+        keys = ("precision", "recall", "f1", "raw_rmse", "cleaned_rmse", "rmse_improvement_pct", "missing_imputation_rmse")
         aggregate = {k: {"mean": avg([x[k] for x in per_seed]), "sd": sd([x[k] for x in per_seed])} for k in keys}
         all_results["method_comparison"][name] = aggregate
         cells = [f'{aggregate[k]["mean"]:.3f} ± {aggregate[k]["sd"]:.3f}' for k in keys]
         report.append("| " + name + " | " + " | ".join(cells) + " |")
     report += ["", "## 3. Per-channel performance (hybrid, seed 11)", "",
-               "| Channel | Precision | Recall | F1 | Raw RMSE | Cleaned RMSE | RMSE improvement |",
+               "| Channel | Precision | Recall | F1 | Raw RMSE | Cleaned RMSE | RMSE improvement | Missing imputation RMSE |",
                "|---|---:|---:|---:|---:|---:|---:|"]
     rows = generate(n_motes=EVAL_MOTES, days=EVAL_DAYS, seed=11)
     rr, cc, ff, _ = CleaningPipeline().run(rows)
