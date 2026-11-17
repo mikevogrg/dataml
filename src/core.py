@@ -84,6 +84,16 @@ def generate(n_motes=8,days=7,fault_rate=.08,seed=7,bursts=0):
                     elif kind=="drift": x[j][ci]+=((j-start)/max(1,length-1))*rng.choice([-1,1])*rng.uniform(3,5)*scale
                     elif kind=="sentinel": x[j][ci]={"temperature":122.153,"humidity":-3.9,"light":54612.0,"voltage":0.0}[ch]
                     elif kind=="missing": x[j][ci]=None
+            if bursts:
+                brng=random.Random(seed+1000+ci+m)
+                noise=statistics.pstdev([z[ci] for z in signals])+1e-9
+                for _ in range(bursts):
+                    length=brng.randint(20,min(59,steps))
+                    start=brng.randrange(max(1,steps-length+1))
+                    if any(labels[ci][j] for j in range(start,start+length)): continue
+                    for j in range(start,start+length):
+                        faulty[j][ci]+=brng.gauss(0,8*noise)
+                        labels[ci][j]="burst"
         for i in range(steps):
             ts=(t+timedelta(minutes=i*C.SAMPLE_MINUTES)).isoformat(sep=" ")
             row={"timestamp":ts,"mote_id":m}
