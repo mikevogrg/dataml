@@ -21,5 +21,5 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Run standard-library test suite
         run: python -m unittest discover -s tests -v
-      - name: Run synthetic demo
-        run: python demo.py
+      - name: Run small synthetic pipeline smoke test
+        run: python -c "from src.core import generate, CleaningPipeline; rows, cleaned, flags, report = CleaningPipeline().run(generate(n_motes=2, days=1)); print(report)"
