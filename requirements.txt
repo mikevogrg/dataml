@@ -1,6 +1,2 @@
-numpy
-pandas
-scikit-learn
-matplotlib
-tabulate
-pytest
+# The repaired core uses only the Python standard library.
+# No pip installation is required.
