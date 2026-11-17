@@ -103,7 +103,7 @@ def run():
     report += ["", "## 4. Fault-type recall (hybrid, seed 11)", "",
                "| Fault type | Recall |", "|---|---:|"]
     fault_recall = recall_by_fault(rr, ff)
-    all_results["fault_recall"] = fault_recall
+    all_results["fault_recall"] = {k: (v if math.isfinite(v) else None) for k, v in fault_recall.items()}
     for fault, value in fault_recall.items():
         report.append(f"| {fault} | {value:.3f} |" if math.isfinite(value) else f"| {fault} | n/a |")
     report += ["", "## 5. Leave-one-layer-out ablation (seed 11)", "",
