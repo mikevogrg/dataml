@@ -103,22 +103,43 @@ def generate(n_motes=8,days=7,fault_rate=.08,seed=7,bursts=0):
     return sorted(rows,key=lambda r:(r["timestamp"],r["mote_id"]))
 
 def regularise(rows):
-    by=defaultdict(dict)
+    """Aggregate readings into the configured time grid and expose absent bins.
+
+    Intel Lab observations arrive at roughly 31-second intervals, so requiring
+    exact five-minute timestamp matches would discard most real observations.
+    """
+    by=defaultdict(lambda: defaultdict(list))
+    interval=C.SAMPLE_MINUTES
     for r in rows:
-        by[r["mote_id"]][r["timestamp"]]=r
+        dt=datetime.fromisoformat(r["timestamp"])
+        bucket=dt.replace(minute=(dt.minute//interval)*interval,second=0,microsecond=0)
+        key=bucket.isoformat(sep=" ")
+        by[r["mote_id"]][key].append(r)
     out=[]
     for mote,items in sorted(by.items()):
         times=sorted(items)
         if not times: continue
-        # Existing timestamp grid is retained; missing packets become explicit only
-        # when their timestamps can be inferred at the configured five-minute cadence.
         start=datetime.fromisoformat(times[0]); end=datetime.fromisoformat(times[-1])
         cur=start
         while cur<=end:
             key=cur.isoformat(sep=" ")
-            row=items.get(key,{"timestamp":key,"mote_id":mote})
-            for ch in C.CHANNELS: row.setdefault(ch,None)
-            out.append(dict(row)); cur+=timedelta(minutes=C.SAMPLE_MINUTES)
+            samples=items.get(key,[])
+            row=dict(samples[0]) if samples else {"timestamp":key,"mote_id":mote}
+            row["timestamp"]=key
+            row["mote_id"]=mote
+            for ch in C.CHANNELS:
+                row[ch]=med([number(sample.get(ch)) for sample in samples]) if samples else None
+            # Preserve synthetic ground truth when a bucket contains one record.
+            for ch in C.CHANNELS:
+                true_key="true_"+ch
+                if samples and true_key in samples[0]:
+                    row[true_key]=med([number(sample.get(true_key)) for sample in samples])
+                fault_key="fault_"+ch
+                if samples and fault_key in samples[0]:
+                    labels=[sample.get(fault_key,"") for sample in samples if sample.get(fault_key)]
+                    row[fault_key]=labels[0] if labels else ""
+            out.append(row)
+            cur+=timedelta(minutes=interval)
     return sorted(out,key=lambda r:(r["timestamp"],r["mote_id"]))
 
 def _rolling(vals, i, window):
