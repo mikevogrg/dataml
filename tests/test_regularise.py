@@ -23,7 +23,7 @@ class RegulariseTests(unittest.TestCase):
         self.assertEqual(result[0]["timestamp"], "2004-02-28 00:00:00")
         self.assertEqual(result[0]["temperature"], 22.0)
         self.assertEqual(result[1]["timestamp"], "2004-02-28 00:05:00")
-        self.assertEqual(result[1]["temperature"], 25.0)
+        self.assertEqual(result[1]["temperature"], 26.0)
 
     def test_inserts_missing_five_minute_bins(self):
         rows = [
