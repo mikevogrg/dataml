@@ -17,6 +17,10 @@ from src.core import CleaningPipeline, generate, stream_clean
 from src.evaluate import detection_scores, recall_by_fault, value_rmse
 
 SEEDS = (11, 12, 13)
+EVAL_MOTES = 4
+EVAL_DAYS = 2
+EVAL_TREES = 50  # faster evaluation ensemble; production default remains 200
+C.IFOREST_TREES = EVAL_TREES
 METHODS = {
     "Range rules": ("range",),
     "Hampel": ("hampel",),
@@ -84,7 +88,7 @@ def run():
     for name, methods in METHODS.items():
         per_seed = []
         for seed in SEEDS:
-            rows = generate(seed=seed)
+            rows = generate(n_motes=EVAL_MOTES, days=EVAL_DAYS, seed=seed)
             cleaned_rows, cleaned, flags, _ = CleaningPipeline(methods).run(rows)
             per_seed.append(score_one(cleaned_rows, cleaned, flags))
         keys = ("precision", "recall", "f1", "raw_rmse", "cleaned_rmse", "rmse_improvement_pct")
@@ -95,7 +99,7 @@ def run():
     report += ["", "## 3. Per-channel performance (hybrid, seed 11)", "",
                "| Channel | Precision | Recall | F1 | Raw RMSE | Cleaned RMSE | RMSE improvement |",
                "|---|---:|---:|---:|---:|---:|---:|"]
-    rows = generate(seed=11)
+    rows = generate(n_motes=EVAL_MOTES, days=EVAL_DAYS, seed=11)
     rr, cc, ff, _ = CleaningPipeline().run(rows)
     base = score_one(rr, cc, ff)
     for d, rm in zip(base["per_channel"], base["per_channel_rmse"]):
