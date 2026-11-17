@@ -264,6 +264,8 @@ class CleaningPipeline:
         by_mote=defaultdict(list)
         for i,r in enumerate(rows): by_mote[r["mote_id"]].append(i)
         for ch in C.CHANNELS:
+            all_values=[number(r.get(ch)) for r in rows]
+            spatial_all=_spatial_flags(rows,ch,all_values) if "spatial" in self.methods else [False]*len(rows)
             for indices in by_mote.values():
                 vals=[number(rows[i].get(ch)) for i in indices]
                 local_rows=[rows[i] for i in indices]
@@ -271,7 +273,7 @@ class CleaningPipeline:
                 if "range" in self.methods: detected["range"]=range_flags(vals,ch)
                 if "hampel" in self.methods: detected["hampel"]=hampel_flags(vals)
                 if "stuck" in self.methods: detected["stuck"]=stuck_flags(vals,ch)
-                if "spatial" in self.methods: detected["spatial"]=_spatial_flags(local_rows,ch,vals)
+                if "spatial" in self.methods: detected["spatial"]=[spatial_all[i] for i in indices]
                 if "iforest" in self.methods:
                     feat=_features(local_rows,ch,vals)
                     valid=[i for i,x in enumerate(vals) if x is not None]
