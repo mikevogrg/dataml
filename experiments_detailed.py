@@ -71,10 +71,10 @@ def run():
         "## 1. Experimental setup",
         "",
         f"- Channels: {', '.join(C.CHANNELS)}",
-        "- Default synthetic dataset: 8 motes × 7 days × 5-minute interval (2,016 time steps per mote; 16,128 mote-time rows).",
+        "- Evaluation dataset: 4 motes × 2 days × 5-minute interval (576 time steps per mote; 2,304 mote-time rows).",
         f"- Seeds: {', '.join(map(str, SEEDS))}",
         "- Default injected fault rate: 8% per channel, with spike, stuck, bias, drift, sentinel and missing faults.",
-        "- Isolation Forest: 200 trees; contamination 0.03; deterministic seed derived from global seed, mote and channel.",
+        "- Isolation Forest evaluation profile: 50 trees; contamination 0.03. The application default remains 200 trees. Seeds are deterministic by global seed, mote and channel.",
         "- Detection metrics: precision, recall and F1 against non-missing fault labels.",
         "- Repair metric: RMSE before and after cleaning against the simulator's hidden clean signal.",
         "- All values below are recalculated by the current implementation when this script is run.",
@@ -84,7 +84,7 @@ def run():
         "| Method | Precision | Recall | F1 | Raw RMSE | Cleaned RMSE | RMSE improvement |",
         "|---|---:|---:|---:|---:|---:|---:|",
     ]
-    all_results = {"seeds": list(SEEDS), "method_comparison": {}, "ablation": {}, "fault_recall": {}, "online_vs_batch": {}}
+    all_results = {"seeds": list(SEEDS), "evaluation_motes": EVAL_MOTES, "evaluation_days": EVAL_DAYS, "evaluation_iforest_trees": EVAL_TREES, "application_default_iforest_trees": 200, "method_comparison": {}, "ablation": {}, "fault_recall": {}, "online_vs_batch": {}}
     for name, methods in METHODS.items():
         per_seed = []
         for seed in SEEDS:
