@@ -177,3 +177,213 @@ def _iforest_flags(features, contamination=C.IFOREST_CONTAMINATION, trees=C.IFOR
     chosen=set(ranked[:count])
     return [i in chosen for i in range(n)]
 
+
+
+def _features(rows,ch,vals):
+    """Build deterministic temporal/context features for one mote/channel."""
+    out=[]
+    for i,x in enumerate(vals):
+        prev=vals[max(0,i-3):i]
+        nxt=vals[i+1:min(len(vals),i+4)]
+        local=med(prev+nxt)
+        ts=rows[i].get("timestamp","")
+        try:
+            dt=datetime.fromisoformat(ts); hour=dt.hour+dt.minute/60
+        except (TypeError,ValueError): hour=0.0
+        out.append([float(x or 0.0),float((x-local) if x is not None and local is not None else 0.0),
+                    float(local or 0.0),math.sin(2*math.pi*hour/24)])
+    return out
+
+def range_flags(vals,ch):
+    lo,hi=C.PHYSICAL_RANGE[ch]
+    return [x is not None and (x<lo or x>hi) for x in vals]
+
+def _spatial_flags(rows,ch,vals,window=C.SPATIAL_WINDOW):
+    groups=defaultdict(list)
+    for i,r in enumerate(rows): groups[r["timestamp"]].append(i)
+    ratios=[]; cross={}
+    for ts,idx in groups.items():
+        peers=[vals[j] for j in idx if vals[j] is not None]
+        cross[ts]=med(peers)
+        if ch=="light" and cross[ts] is not None and cross[ts]>100:
+            ratios.extend(vals[j]/cross[ts] for j in idx if vals[j] is not None)
+    typical=med(ratios) if ratios else None
+    residual=[None]*len(vals)
+    for ts,idx in groups.items():
+        c=cross[ts]
+        if c is None: continue
+        for i in idx:
+            x=vals[i]
+            if x is None: continue
+            if ch=="light":
+                if c>100 and typical is not None:
+                    residual[i]=(x-c*typical)/(c+50.0)
+            else:
+                peers=[vals[j] for j in idx if j!=i and vals[j] is not None]
+                peer=med(peers)
+                if peer is not None: residual[i]=x-peer
+    valid=[x for x in residual if x is not None]
+    center=med(valid); mad=med([abs(x-center) for x in valid]) if center is not None else None
+    scale=max(1.4826*(mad or 0.0),0.02 if ch=="light" else 0.15)
+    return [x is not None and center is not None and abs(x-center)>C.SPATIAL_NSIGMA*scale for x in residual]
+
+def impute(vals, flags=None, spatial=None, short_gap=C.SHORT_GAP):
+    """Interpolate short missing/flagged runs; use robust global fallback for long runs."""
+    n=len(vals); bad=list(flags or [False]*n)
+    if len(bad)!=n: raise ValueError("flags and values must have equal lengths")
+    out=list(vals); invalid=[x is None or bad[i] for i,x in enumerate(vals)]
+    good=[x for i,x in enumerate(vals) if not invalid[i]]
+    fallback=med(good)
+    i=0
+    while i<n:
+        if not invalid[i]: i+=1; continue
+        start=i
+        while i<n and invalid[i]: i+=1
+        end=i; left=out[start-1] if start>0 and not invalid[start-1] else None
+        right=out[end] if end<n and not invalid[end] else None
+        length=end-start
+        for j in range(start,end):
+            if length<=short_gap and left is not None and right is not None:
+                out[j]=left+(right-left)*(j-start+1)/(length+1)
+            elif spatial is not None and j<len(spatial) and spatial[j] is not None:
+                out[j]=spatial[j]
+            else: out[j]=fallback
+    return out
+
+class CleaningPipeline:
+    METHODS=("range","hampel","stuck","spatial","iforest")
+    def __init__(self,methods=None):
+        self.methods=tuple(methods or self.METHODS)
+        unknown=set(self.methods)-set(self.METHODS)
+        if unknown: raise ValueError("Unknown detection methods: "+", ".join(sorted(unknown)))
+    def run(self,raw_rows):
+        rows=regularise(raw_rows)
+        cleaned=[dict(r) for r in rows]
+        flags={ch:[False]*len(rows) for ch in C.CHANNELS}
+        reasons={ch:[[] for _ in rows] for ch in C.CHANNELS}
+        by_mote=defaultdict(list)
+        for i,r in enumerate(rows): by_mote[r["mote_id"]].append(i)
+        for ch in C.CHANNELS:
+            for indices in by_mote.values():
+                vals=[number(rows[i].get(ch)) for i in indices]
+                local_rows=[rows[i] for i in indices]
+                detected={name:[False]*len(indices) for name in self.METHODS}
+                if "range" in self.methods: detected["range"]=range_flags(vals,ch)
+                if "hampel" in self.methods: detected["hampel"]=hampel_flags(vals)
+                if "stuck" in self.methods: detected["stuck"]=stuck_flags(vals,ch)
+                if "spatial" in self.methods: detected["spatial"]=_spatial_flags(local_rows,ch,vals)
+                if "iforest" in self.methods:
+                    feat=_features(local_rows,ch,vals)
+                    valid=[i for i,x in enumerate(vals) if x is not None]
+                    if len(valid)>=8:
+                        scored=_iforest_flags([feat[i] for i in valid],seed=C.RANDOM_STATE+int(rows[indices[0]]["mote_id"])+C.CHANNELS.index(ch))
+                        for j,k in enumerate(valid): detected["iforest"][k]=scored[j]
+                for j,global_i in enumerate(indices):
+                    names=[name for name in self.methods if detected[name][j]]
+                    if vals[j] is None: names.append("missing")
+                    if names:
+                        flags[ch][global_i]=True; reasons[ch][global_i]=names
+                # Exclude physically impossible values and detector outliers before imputation.
+                bad=[flags[ch][i] for i in indices]
+                repaired=impute(vals,bad)
+                for j,global_i in enumerate(indices):
+                    cleaned[global_i][ch]=repaired[j]
+        report={}
+        for ch in C.CHANNELS:
+            report[ch]={"readings":len(rows),"flagged":sum(flags[ch]),"missing":sum(r.get(ch) is None for r in rows),
+                        "flagged_pct":round(100*sum(flags[ch])/max(1,len(rows)),2)}
+        self.last_reasons=reasons
+        return rows,cleaned,flags,report
+
+def to_long(rows,cleaned,flags):
+    out=[]
+    for i,r in enumerate(rows):
+        for ch in C.CHANNELS:
+            raw=number(r.get(ch)); bad=bool(flags[ch][i])
+            reasons=[]
+            if raw is None: reasons.append("missing")
+            if bad:
+                # Reconstruct detector reason labels from the pipeline's last run.
+                reasons.extend(getattr(_ACTIVE_PIPELINE,"last_reasons",{}).get(ch,[[] for _ in rows])[i])
+            out.append({"timestamp":r["timestamp"],"mote_id":r["mote_id"],"channel":ch,
+                        "raw":raw,"cleaned":number(cleaned[i].get(ch)),"flagged":int(bad),
+                        "missing":int(raw is None),"reasons":reasons})
+    return out
+
+_ACTIVE_PIPELINE=None
+
+def _pipeline_run(self,raw_rows):
+    global _ACTIVE_PIPELINE
+    result=_original_pipeline_run(self,raw_rows)
+    _ACTIVE_PIPELINE=self
+    return result
+_original_pipeline_run=CleaningPipeline.run
+CleaningPipeline.run=_pipeline_run
+
+def stream_clean(rows):
+    """Causal online path: range and recent-history Hampel/stuck checks only."""
+    ordered=sorted(rows,key=lambda r:(r["timestamp"],r["mote_id"]))
+    history=defaultdict(lambda:deque(maxlen=max(C.HAMPEL_WINDOW,C.STUCK_MIN_RUN)+1))
+    out=[]
+    for r in ordered:
+        for ch in C.CHANNELS:
+            x=number(r.get(ch)); key=(r["mote_id"],ch); h=list(history[key])
+            reasons=[]
+            if x is None: reasons.append("missing")
+            elif x<C.PHYSICAL_RANGE[ch][0] or x>C.PHYSICAL_RANGE[ch][1]: reasons.append("range")
+            elif len(h)>=5:
+                center=med(h); mad=med([abs(v-center) for v in h])
+                if mad is not None and abs(x-center)>max(4*1.4826*mad,0.5): reasons.append("online_hampel")
+                if len(h)>=C.STUCK_MIN_RUN-1 and all(v==x for v in h[-(C.STUCK_MIN_RUN-1):]): reasons.append("stuck")
+            clean=x
+            if reasons and h: clean=med(h)
+            elif x is None: clean=med(h)
+            if x is not None and "range" not in reasons: history[key].append(x)
+            out.append({"timestamp":r["timestamp"],"mote_id":r["mote_id"],"channel":ch,
+                        "raw":x,"cleaned":clean,"flagged":int(bool(reasons)),"missing":int(x is None),"reasons":reasons})
+    return out
+
+def open_db(path="results/audit.db"):
+    Path(path).parent.mkdir(parents=True,exist_ok=True)
+    con=sqlite3.connect(path)
+    con.execute("""CREATE TABLE IF NOT EXISTS readings(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,timestamp TEXT NOT NULL,mote_id INTEGER NOT NULL,
+        channel TEXT NOT NULL,raw REAL,cleaned REAL,flagged INTEGER NOT NULL DEFAULT 0,
+        missing INTEGER NOT NULL DEFAULT 0,reasons TEXT)""")
+    con.execute("CREATE INDEX IF NOT EXISTS idx_readings_channel ON readings(channel)")
+    con.commit()
+    return con
+
+def save_results(con,results):
+    con.executemany("""INSERT INTO readings(timestamp,mote_id,channel,raw,cleaned,flagged,missing,reasons)
+        VALUES(:timestamp,:mote_id,:channel,:raw,:cleaned,:flagged,:missing,:reasons)""",
+        [{**r,"reasons":",".join(r.get("reasons",[])) if isinstance(r.get("reasons"),(list,tuple)) else str(r.get("reasons",""))} for r in results])
+    con.commit()
+
+def summary(con):
+    return con.execute("""SELECT channel,COUNT(*),SUM(flagged),SUM(missing),
+        ROUND(100.0*SUM(flagged)/COUNT(*),2) FROM readings GROUP BY channel ORDER BY channel""").fetchall()
+
+def explain(con,mote_id,channel):
+    return con.execute("""SELECT timestamp,raw,cleaned,flagged,missing,reasons FROM readings
+        WHERE mote_id=? AND channel=? ORDER BY timestamp""",(mote_id,channel)).fetchall()
+
+def load_intel_lab(path,motes=None):
+    """Load Intel Berkeley Lab whitespace records: date time epoch mote temp humidity light voltage."""
+    import gzip
+    opener=gzip.open if str(path).lower().endswith(".gz") else open
+    out=[]
+    with opener(path,"rt",encoding="utf-8",errors="replace") as f:
+        for line in f:
+            parts=line.strip().split()
+            if len(parts)<8: continue
+            try:
+                date,time=parts[0],parts[1]
+                mote=int(parts[3])
+                if motes is not None and mote not in motes: continue
+                stamp=datetime.fromisoformat(date+"T"+time).isoformat(sep=" ")
+                vals=[number(v) for v in parts[4:8]]
+                out.append({"timestamp":stamp,"mote_id":mote,**dict(zip(C.CHANNELS,vals))})
+            except (ValueError,IndexError): continue
+    if not out: raise ValueError("No Intel Lab records found. Expected: date time epoch mote temperature humidity light voltage.")
+    return sorted(out,key=lambda r:(r["timestamp"],r["mote_id"]))
