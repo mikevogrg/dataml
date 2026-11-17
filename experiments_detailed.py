@@ -134,7 +134,7 @@ def run():
     rr, cc, ff, _ = CleaningPipeline().run(rows)
     base = score_one(rr, cc, ff)
     for d, rm in zip(base["per_channel"], base["per_channel_rmse"]):
-        report.append(f'| {d["channel"]} | {d["precision"]:.3f} | {d["recall"]:.3f} | {d["f1"]:.3f} | {rm["raw_rmse"]:.4f} | {rm["cleaned_rmse"]:.4f} | {rm["improvement_%"]:.2f}% |')
+        report.append(f'| {d["channel"]} | {d["precision"]:.3f} | {d["recall"]:.3f} | {d["f1"]:.3f} | {rm["raw_rmse"]:.4f} | {rm["cleaned_rmse"]:.4f} | {rm["improvement_%"]:.2f}% | {rm["missing_imputation_rmse"]:.4f} |')
     report += ["", "## 4. Fault-type recall (hybrid, seed 11)", "",
                "| Fault type | Recall |", "|---|---:|"]
     fault_recall = recall_by_fault(rr, ff)
