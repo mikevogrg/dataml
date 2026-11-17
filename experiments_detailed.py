@@ -107,12 +107,12 @@ def run():
         "- Default injected fault rate: 8% per channel, with spike, stuck, bias, drift, sentinel and missing faults.",
         "- Isolation Forest evaluation profile: 50 trees; contamination 0.03. The application default remains 200 trees. Seeds are deterministic by global seed, mote and channel.",
         "- Detection metrics: precision, recall and F1 against non-missing fault labels.",
-        "- Repair metrics: raw and cleaned RMSE on the same observed timestamps; missing-value imputation RMSE is reported separately against the hidden clean signal.",
+        "- Repair metrics: raw and cleaned RMSE are compared on identical observed timestamps, per channel. Missing-value imputation RMSE is reported separately. RMSE values are not averaged across channels because their measurement units differ.",
         "- All values below are recalculated by the current implementation when this script is run.",
         "",
         "## 2. Detection method comparison (mean ± standard deviation across seeds)",
         "",
-        "| Method | Precision | Recall | F1 | Raw RMSE | Cleaned RMSE | RMSE improvement | Missing imputation RMSE |",
+        "| Method | Precision | Recall | F1 | Mean per-channel RMSE improvement |",
         "|---|---:|---:|---:|---:|---:|---:|---:|",
     ]
     all_results = {"seeds": list(SEEDS), "evaluation_motes": EVAL_MOTES, "evaluation_days": EVAL_DAYS, "evaluation_iforest_trees": EVAL_TREES, "application_default_iforest_trees": 200, "method_comparison": {}, "ablation": {}, "fault_recall": {}, "online_vs_batch": {}}
@@ -122,7 +122,7 @@ def run():
             rows = generate(n_motes=EVAL_MOTES, days=EVAL_DAYS, seed=seed)
             cleaned_rows, cleaned, flags, _ = CleaningPipeline(methods).run(rows)
             per_seed.append(score_one(cleaned_rows, cleaned, flags))
-        keys = ("precision", "recall", "f1", "raw_rmse", "cleaned_rmse", "rmse_improvement_pct", "missing_imputation_rmse")
+        keys = ("precision", "recall", "f1", "rmse_improvement_pct")
         aggregate = {k: {"mean": avg([x[k] for x in per_seed]), "sd": sd([x[k] for x in per_seed])} for k in keys}
         all_results["method_comparison"][name] = aggregate
         cells = [f'{aggregate[k]["mean"]:.3f} ± {aggregate[k]["sd"]:.3f}' for k in keys]
