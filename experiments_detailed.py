@@ -122,9 +122,11 @@ def run():
                "|---|---:|---:|---:|---:|"]
     online = stream_clean(rows)
     online_by = {ch: {"tp": 0, "fp": 0, "fn": 0, "flagged": 0} for ch in C.CHANNELS}
+    labels = {(r["timestamp"], r["mote_id"]): r for r in rows}
     for r in online:
         ch = r["channel"]
-        truth = bool(r.get("fault_" + ch) and r.get("fault_" + ch) != "missing")
+        source = labels[(r["timestamp"], r["mote_id"])]
+        truth = bool(source.get("fault_" + ch) and source.get("fault_" + ch) != "missing")
         pred = bool(r["flagged"] and r["raw"] is not None)
         online_by[ch]["tp"] += int(truth and pred)
         online_by[ch]["fp"] += int((not truth) and pred)
